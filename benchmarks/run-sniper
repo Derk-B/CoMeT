@@ -223,7 +223,11 @@ os.putenv('SNIPER_ROOT', graphiterootdir)
 os.putenv('GRAPHITE_ROOT', graphiterootdir)
 
 if roi_only:
-  if benchmarks:
+  if len(benchmarks) == 1:
+    # A single application: let Sniper follow its ROI markers too. Otherwise Sniper runs in detailed mode
+    # from the start and, through the response files, switches record-trace to detailed before the ROI.
+    rungraphiteoptions.append('--roi')
+  elif benchmarks:
     pass # record-trace will only send ROI instructions through SIFT,
          # Sniper itself must process all of them in detailed mode
   else:

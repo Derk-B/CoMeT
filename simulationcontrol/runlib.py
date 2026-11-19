@@ -125,10 +125,13 @@ def run(configuration_tags, benchmark):
     started = datetime.datetime.now()
     change_configuration_files(configuration_tags)
 
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -s memTherm_core' \
+    # llama.cpp marks its inference with SimRoiStart/SimRoiEnd: fast-forward through model loading
+    roi = '--roi' if benchmark.startswith('local-llama') else '--no-roi'
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} {roi} --sim-end=last -s memTherm_core' \
         .format(number_cores=config.NUMBER_CORES,
                 config=config.SNIPER_CONFIG,
-                benchmark=benchmark)
+                benchmark=benchmark,
+                roi=roi)
     console_output = ''
     print(args)
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
@@ -190,6 +193,7 @@ def get_instance(benchmark, parallelism, input_set='small'):
         'splash2-raytrace': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         'splash2-water.nsq': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         'splash2-water.sp': [1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16],  # other parallelism values run but are suboptimal -> don't allow in the first place
+        'local-llama': [0, 0, 0, 4],  # llama-simple always runs 4 threads
     }
     
     ps = threads[benchmark]

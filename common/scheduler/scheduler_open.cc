@@ -864,8 +864,13 @@ int SchedulerOpen::coreRequirementTranslation (String compositionString) {
 			int t[] = {1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16};  // zeros are  placeholders, other parallelism values run but are suboptimal -> don't allow in the first place
 			requirements.insert(requirements.end(), std::begin(t), std::end(t));
 		}
+	} else if (suite == "local") {
+		if (benchmark == "llama") {
+			int t[] = {0, 0, 0, 4};  // zeros are placeholders, llama-simple always runs 4 threads
+			requirements.insert(requirements.end(), std::begin(t), std::end(t));
+		}
 	} else {
-		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC and SPLASH2 are implemented). Please add the profile." << endl;		
+		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC, SPLASH2 and local-llama are implemented). Please add the profile." << endl;		
 		exit (1);
 	}
 

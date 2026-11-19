@@ -77,6 +77,10 @@ UInt64 write_adv_count;
 
 UInt32 MCP_FLAG;
 
+// perf_model/dram/location_latency/force_layer: if >= 0, every access goes to this layer (same x/y bank position).
+SInt64 FORCED_LAYER = -1;
+UInt64 FLOORPLAN_BANKS_PER_LAYER;
+
 
 //#define CALL_TRACE 0
 
@@ -97,6 +101,23 @@ void read_memory_config(core_id_t requester)
     //BANKS_PER_CHANNEL = Sim()->getCfg()->getInt("memory/banks_per_channel");
     BANKS_PER_CHANNEL = (NUM_OF_BANKS/NUM_OF_CHANNELS) - 1;
     BANK_MASK = (((1<<(BANK_ADDRESS_BITS))-1) << BANK_OFFSET_IN_PA);
+
+    FLOORPLAN_BANKS_PER_LAYER = Sim()->getCfg()->getInt("memory/banks_in_x") * Sim()->getCfg()->getInt("memory/banks_in_y");
+    FORCED_LAYER = Sim()->getCfg()->getInt("perf_model/dram/location_latency/force_layer");
+    if (FORCED_LAYER >= 0)
+    {
+        LOG_ASSERT_ERROR(TYPE_OF_STACK != "DDR", "perf_model/dram/location_latency/force_layer requires a stacked memory");
+        LOG_ASSERT_ERROR(FORCED_LAYER < Sim()->getCfg()->getInt("memory/banks_in_z"),
+                         "perf_model/dram/location_latency/force_layer (%ld) must be below memory/banks_in_z", FORCED_LAYER);
+    }
+}
+
+// Moves a bank to the forced layer, keeping its x/y position (bank = z * banks_in_x * banks_in_y + x * banks_in_y + y).
+static UInt32 force_bank_layer(UInt32 bank)
+{
+    if (FORCED_LAYER < 0)
+        return bank;
+    return FORCED_LAYER * FLOORPLAN_BANKS_PER_LAYER + bank % FLOORPLAN_BANKS_PER_LAYER;
 }
 void 
 dram_read_trace(IntPtr address, core_id_t requester, SubsecondTime now, UInt64 m_reads)
@@ -164,6 +185,8 @@ dram_read_trace(IntPtr address, core_id_t requester, SubsecondTime now, UInt64 m
             
         }
         
+
+        read_bank_accessed = force_bank_layer(read_bank_accessed);
 
         //printf("\nRead banked accessed %d\n", read_bank_accessed) ;
 
@@ -286,6 +309,8 @@ dram_write_trace(IntPtr address, core_id_t requester, SubsecondTime now, UInt64 
             
         }
         
+        write_bank_accessed = force_bank_layer(write_bank_accessed);
+
         //printf("\nWrite banked accessed %d\n", write_bank_accessed) ;
         UInt64 current_time = now.getUS();
         //printf("Current time is put()%u\n", current_time);
@@ -338,8 +363,8 @@ dram_write_trace(IntPtr address, core_id_t requester, SubsecondTime now, UInt64 
 }
 
 //  Moved this to a separate function to be used by other files.
-UInt32
-get_address_bank(IntPtr address, core_id_t requester)
+static UInt32
+get_address_bank_mapped(IntPtr address, core_id_t requester)
 {
     SInt32 memory_controllers_interleaving = 0;
     memory_controllers_interleaving = Sim()->getCfg()->getInt("perf_model/dram/controllers_interleaving");
@@ -379,6 +404,12 @@ get_address_bank(IntPtr address, core_id_t requester)
             }
         }
     }
+}
+
+UInt32
+get_address_bank(IntPtr address, core_id_t requester)
+{
+    return force_bank_layer(get_address_bank_mapped(address, requester));
 }
 
 dram_xyz_t get_address_xyz(IntPtr address, core_id_t requester, UInt32 model_bank)

@@ -210,6 +210,11 @@ String makeConfig(String CACTI_OUT, config::Config *cfg)
    outFile << "row_cycle_time = " << keys[31] << std::endl;
    outFile << "TSV_latency = " << keys[32] << std::endl;
    outFile << "bus_frequency = " << keys[33] << std::endl;
+   // Worst-case horizontal wire delays (die centre -> farthest bank), used by perf_model/dram/location_latency
+   if (keys.size() >= 36) {
+      outFile << "horizontal_center_stripe_delay = " << keys[34] << std::endl;
+      outFile << "horizontal_bank_bus_delay = " << keys[35] << std::endl;
+   }
    readFile.close();
    outFile.close();
 

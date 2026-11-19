@@ -27,7 +27,7 @@ def example2():
                       ):
         min_parallelism = runlib.get_feasible_parallelisms(benchmark)[0]
         max_parallelism = runlib.get_feasible_parallelisms(benchmark)[-1]
-        for freq in (1, 2, 3, 4):
+        for freq in (3,):
             for parallelism in (min_parallelism, max_parallelism):
                 # you can also use try_run instead
                 runlib.run(['open', '{:.1f}GHz'.format(freq), 'constFreq'], runlib.get_instance(benchmark, parallelism, input_set='simsmall'))
@@ -41,11 +41,35 @@ def example():
 def case_study():
     runlib.run(['open', 'ondemand'], runlib.get_instance('parsec-swaptions', parallelism=4, input_set='medium'))
 
+def test_dyn_latency():
+    for benchmark in (
+        # "parsec-blackscholes",
+        #  'parsec-canneal',
+        'parsec-streamcluster',
+        # "parsec_swaptions",
+    ):
+        for parallelism in (4, ):
+            for freq in (3,):
+                # for mode in ('locLatNone', 'locLatTSV', 'locLatTSVAndHorizontal'):
+                mode = "locLatTSV"
+                for layer in (7,):
+                    runlib.run(['open', '{:.1f}GHz'.format(freq), 'constFreq', mode, "forceLayer{}".format(layer)], runlib.get_instance(benchmark, parallelism, input_set='simsmall'))
+
+def test_llama_dyn_latency():
+    # One llama.cpp inference (Qwen3-0.6B, see benchmarks/local/__init__.py) per location latency mode.
+    # Input sets: 'test' ("Hello", 1 token), 'small' ("Once upon a time", 1 token), 'medium' (4 tokens).
+    # Only the inference between SimRoiStart/SimRoiEnd is simulated in detail; llama-simple uses 4 threads.
+    for freq in (3,):
+        # for mode in ('locLatNone', 'locLatTSV', 'locLatTSVAndHorizontal', 'locLatCoreToBank'):
+        for mode in ['locLatCoreToBank']:
+            runlib.run(['open', '{:.1f}GHz'.format(freq), 'constFreq', mode], runlib.get_instance('local-llama', 4, input_set='medium'))
+
 
 def main():
-    example2()
-    case_study()
-
+    # example2()
+    # case_study()
+    test_dyn_latency()
+    # test_llama_dyn_latency()
 
 if __name__ == '__main__':
     main()

@@ -527,7 +527,8 @@ if __name__ == "__main__":
 os.system("cd " + pngFolder)
 image_files=pngFolder+"/heatmap_%d.png"
 video_file=pngFolder+"/output.avi"
-os.system("ffmpeg -framerate 1 -i " + image_files + " -start_number 1 -c:v mpeg4 -vtag xvid -qscale:v 4 -c:a libmp3lame -qscale:a 5 " + video_file)
+os.system("ffmpeg -framerate 1 -i " + image_files + " " + video_file)
+# os.system("ffmpeg -framerate 1 -i " + image_files + " -start_number 1 -c:v mpeg4 -vtag xvid -qscale:v 4 -c:a libmp3lame -qscale:a 5 " + video_file)
 
 ##        b_temp = np.random.random(( 4 , 4 )) 
 ##        index=0
